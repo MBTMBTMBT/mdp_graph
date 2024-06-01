@@ -66,12 +66,21 @@ class PolicyGraph(MDPGraph):
                 self.policy_distributions[state][action] = prob
 
     def probability_iteration(self, threshold: float = 1e-4, max_iterations: int = 1e5):
+        for state in self.s_a_ns_transition_probs:
+            self.state_probabilities[state] = 1.0 / len(self.s_a_ns_transition_probs)
         for _ in range(max_iterations):
             delta = 0
             new_probs = defaultdict(float)
             for state in self.s_a_ns_transition_probs:
-                for action in self.state_actions[state]:
-                    pass
+                state_prob = 0.0
+                for inverse_neighbour in self.get_inverse_neighbors(state):
+                    for action in self.state_actions[inverse_neighbour]:
+                        state_prob += self.state_probabilities[inverse_neighbour] * self.policy_distributions[inverse_neighbour][action] * self.s_a_ns_transition_probs[inverse_neighbour][action][state]
+                new_probs[state] = state_prob
+                delta = max(delta, abs(new_probs[state] - self.state_probabilities[state]))
+            self.state_probabilities = new_probs
+            if delta < threshold:
+                break
 
 
 class OptimalPolicyGraph(PolicyGraph):
