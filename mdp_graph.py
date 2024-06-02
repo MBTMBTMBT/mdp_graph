@@ -101,18 +101,23 @@ class PolicyGraph(MDPGraph):
                 delta_control_info = 0.0
                 for action in self.state_actions[state]:
                     action_prob = self.policy_distributions[state][action]
-                    delta_control_info += action_prob * math.log2(action/len(self.state_actions[state]))
+                    if action_prob <= 0.0:
+                        continue
+                    delta_control_info += action_prob * math.log2(action_prob/(1.0/len(self.state_actions[state])))
                 for action, next_states in self.s_a_ns_transition_probs[state].items():
-                    action_value = 0
-                    for next_state, probability in next_states.items():
-                        reward = self.s_a_ns_rewards[state][action][next_state]
-                        action_value += probability * (reward + gamma * self.values[next_state])
-                    max_value = max(max_value, action_value)
-                new_control_info[state] = max_value
-                delta = max(delta, abs(new_control_info[state] - self.values[state]))
-            self.values = new_control_info
+                    for next_state, trans_prob in next_states.items():
+                        neighbour_info = self.control_info[next_state]
+                        action_prob = self.policy_distributions[state][action]
+                        state_control_info += action_prob * trans_prob * neighbour_info
+                state_control_info *= gamma
+                new_control_info[state] = delta_control_info + state_control_info
+                delta = max(delta, abs(new_control_info[state] - self.control_info[state]))
+            self.control_info = new_control_info
             if delta < threshold:
                 break
+
+    def get_control_info(self):
+        return self.control_info
 
 
 class OptimalPolicyGraph(PolicyGraph):

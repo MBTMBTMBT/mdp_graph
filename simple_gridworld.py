@@ -590,4 +590,6 @@ if __name__ == "__main__":
     optimal_policy = optimal_policy_graph.get_optimal_policy()
     optimal_policy_graph.probability_iteration()
     probability_distribution = optimal_policy_graph.get_probability_distribution()
+    optimal_policy_graph.control_info_iteration(0.99)
+    control_info = optimal_policy_graph.get_control_info()
     pass
