@@ -231,7 +231,7 @@ class PolicyGraph(MDPGraph):
                     grid[j, k] = self.policy_distributions[state].get(action, 0)
 
             ax = axs[i]
-            cax = ax.imshow(grid, cmap='gray', aspect='auto', vmin=0, vmax=1)
+            cax = ax.imshow(grid, cmap='binary', aspect='auto', vmin=0, vmax=1)
 
             # Set action labels for the top of each column
             ax.set_xticks(np.arange(num_actions))
