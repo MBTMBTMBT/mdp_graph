@@ -579,8 +579,8 @@ def preprocess_image(img: np.ndarray, rotate=False, size=None) -> torch.Tensor:
 
 
 if __name__ == "__main__":
-    env = SimpleGridWorld('maps/simple_grid/gridworld-maze-13.txt', make_random=False, random_traps=0,
-                          agent_position=None, goal_position=(1, 8), max_steps=1024, trans_prob=1.0)
+    env = SimpleGridWorld('maps/test.txt', make_random=False, random_traps=0,
+                          agent_position=None, goal_position=(1, 5), max_steps=1024, trans_prob=0.8)
     obs, info = env.reset()
     mdp_graph = env.make_mdp_graph()
     mdp_graph.visualize()
