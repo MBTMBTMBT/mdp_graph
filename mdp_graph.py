@@ -1,3 +1,4 @@
+import math
 from collections.abc import Hashable
 from collections import defaultdict
 
@@ -58,6 +59,7 @@ class PolicyGraph(MDPGraph):
         super().__init__()
         self.policy_distributions = defaultdict(lambda: defaultdict(float))
         self.state_probabilities = defaultdict(float)
+        self.control_info = defaultdict(float)
 
     def uniform_policy(self):
         for state in self.state_actions.keys():
@@ -65,7 +67,7 @@ class PolicyGraph(MDPGraph):
             for action in self.state_actions[state]:
                 self.policy_distributions[state][action] = prob
 
-    def probability_iteration(self, threshold: float = 1e-5, max_iterations: int = int(5e5)):
+    def probability_iteration(self, threshold: float = 1e-5, max_iterations: int = int(1e5)):
         for state in self.s_a_ns_transition_probs:
             self.state_probabilities[state] = 1.0 / len(self.s_a_ns_transition_probs)
         for _ in range(max_iterations):
@@ -90,13 +92,35 @@ class PolicyGraph(MDPGraph):
     def get_probability_distribution(self):
         return self.state_probabilities
 
+    def control_info_iteration(self, gamma: float, threshold: float = 1e-3, max_iterations: int = int(1e5)):
+        for _ in range(max_iterations):
+            delta = 0
+            new_control_info = defaultdict(float)
+            for state in self.s_a_ns_transition_probs:
+                state_control_info = 0.0
+                delta_control_info = 0.0
+                for action in self.state_actions[state]:
+                    action_prob = self.policy_distributions[state][action]
+                    delta_control_info += action_prob * math.log2(action/len(self.state_actions[state]))
+                for action, next_states in self.s_a_ns_transition_probs[state].items():
+                    action_value = 0
+                    for next_state, probability in next_states.items():
+                        reward = self.s_a_ns_rewards[state][action][next_state]
+                        action_value += probability * (reward + gamma * self.values[next_state])
+                    max_value = max(max_value, action_value)
+                new_control_info[state] = max_value
+                delta = max(delta, abs(new_control_info[state] - self.values[state]))
+            self.values = new_control_info
+            if delta < threshold:
+                break
+
 
 class OptimalPolicyGraph(PolicyGraph):
     def __init__(self,):
         super().__init__()
         self.values = defaultdict(float)
 
-    def value_iteration(self, gamma: float, threshold: float = 1e-5, max_iterations: int = int(5e5)):
+    def value_iteration(self, gamma: float, threshold: float = 1e-5, max_iterations: int = int(1e5)):
         for _ in range(max_iterations):
             delta = 0
             new_values = defaultdict(float)
