@@ -1,5 +1,4 @@
 import collections
-import math
 import random
 from itertools import product
 
@@ -11,6 +10,8 @@ import pygame
 import torch
 from gymnasium import spaces
 from torchvision.transforms import transforms
+
+from mdp_graph import MDPGraph
 
 ACTIONS = {
     0: 'UP',
@@ -155,13 +156,14 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
     metadata = {'render.modes': ['human', 'rgb_array', 'console']}
 
     def __init__(self, text_file, cell_size=(20, 20), obs_size=(128, 128), agent_position=None, goal_position=None,
-                 random_traps=0, make_random=False, max_steps=128,
+                 random_traps=0, make_random=False, max_steps=128, trans_prob=1.0
                  # compute_optimal=False,
                  ):
         super(SimpleGridWorld, self).__init__()
         self.random = make_random
         self.max_steps = max_steps
         self.step_count = 0
+        self.trans_prob = trans_prob
 
         self.grid = self.load_grid(text_file)
         self.cell_size = cell_size
@@ -307,6 +309,12 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
 
         return graph
 
+    def make_mdp_graph(self):
+        mdp_graph = MDPGraph()
+        for row in range(self.grid.shape[0]):
+            for col in range(self.grid.shape[1]):
+                pass
+
     def load_grid(self, text_file):
         with open(text_file, 'r') as file:
             lines = file.read().splitlines()
@@ -347,7 +355,18 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
     def step(self, action):
         self.step_count += 1
         deltas = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}
-        delta = deltas[action]
+        perpendicular_moves = {
+            0: [(0, -1), (0, 1)],  # Action 0 (up) -> left or right
+            1: [(0, -1), (0, 1)],  # Action 1 (down) -> left or right
+            2: [(-1, 0), (1, 0)],  # Action 2 (left) -> up or down
+            3: [(-1, 0), (1, 0)],  # Action 3 (right) -> up or down
+        }
+
+        if random.random() < self.trans_prob:
+            delta = deltas[action]
+        else:
+            delta = random.choice(perpendicular_moves[action])
+
         new_position = (self.agent_position[0] + delta[0], self.agent_position[1] + delta[1])
 
         hits_wall = False
@@ -357,7 +376,7 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
             elif self.grid[new_position] == 'W':
                 hits_wall = True
 
-        terminated = self.agent_position == self.goal_position  # or self.grid[self.agent_po10.70.27.253sition] == 'X'
+        terminated = self.agent_position == self.goal_position  # or self.grid[self.agent_position] == 'X'
         truncated = False
         reward = 5 if self.agent_position == self.goal_position else -1 if (
                 self.grid[self.agent_position] == 'X' or self.agent_position in self.pos_random_traps) else -0.01
