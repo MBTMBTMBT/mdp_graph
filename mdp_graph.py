@@ -4,6 +4,7 @@ from collections.abc import Hashable
 
 import matplotlib.pyplot as plt
 import networkx as nx
+import numpy as np
 
 
 def grid_layout(g: nx.Graph) -> dict[Hashable, tuple[float, float]]:
@@ -208,6 +209,42 @@ class PolicyGraph(MDPGraph):
         nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels, font_size=arrow_font_size)
 
         plt.title(title)
+        plt.show()
+
+    def draw_action_distribution(self, num_cols: int = 5, figsize=(20, 4), dpi=300):
+        states = sorted(list(self.state_actions.keys()))
+        actions_set = {action for actions in self.state_actions.values() for action in actions}
+        actions = sorted(actions_set)
+        num_states = len(states)
+        num_actions = len(actions)
+        states_per_col = int(np.ceil(num_states / num_cols))
+
+        fig, axs = plt.subplots(1, num_cols, figsize=figsize, constrained_layout=True, dpi=dpi)
+
+        for i in range(num_cols):
+            start_idx = i * states_per_col
+            end_idx = min(start_idx + states_per_col, num_states)
+            grid = np.zeros((end_idx - start_idx, num_actions))
+
+            for j, state in enumerate(states[start_idx:end_idx]):
+                for k, action in enumerate(actions):
+                    grid[j, k] = self.policy_distributions[state].get(action, 0)
+
+            ax = axs[i]
+            cax = ax.imshow(grid, cmap='gray', aspect='auto', vmin=0, vmax=1)
+
+            # Set action labels for the top of each column
+            ax.set_xticks(np.arange(num_actions))
+            ax.set_xticklabels(actions)
+
+            # Set state labels for each row
+            ax.set_yticks(np.arange(end_idx - start_idx))
+            ax.set_yticklabels(states[start_idx:end_idx])
+
+            ax.set_title(f'Part {i + 1}')
+
+        plt.colorbar(cax, ax=axs, orientation='vertical', fraction=.01)
+        plt.suptitle('Action Distribution for States')
         plt.show()
 
 

@@ -594,4 +594,5 @@ if __name__ == "__main__":
     optimal_policy_graph.control_info_iteration(0.999)
     control_info = optimal_policy_graph.get_control_info()
     optimal_policy_graph.visualize_policy_and_control_info()
+    optimal_policy_graph.draw_action_distribution()
     pass
