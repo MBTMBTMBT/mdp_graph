@@ -1,6 +1,22 @@
 import math
 from collections.abc import Hashable
 from collections import defaultdict
+import networkx as nx
+import matplotlib.pyplot as plt
+
+
+def grid_layout(g: nx.Graph) -> dict[Hashable, tuple[float, float]]:
+    '''
+    Can only be used for gridworlds.
+    :param g: graph to visualize.
+    :return: networkx layout.
+    '''
+    pos = {}
+    for node in g.nodes():
+        # Assuming the node is a tuple (row, col) representing its position in the grid
+        row, col = node
+        pos[node] = (col, -row)  # Use (col, -row) to maintain vertical alignment
+    return pos
 
 
 class MDPGraph(object):
@@ -53,6 +69,34 @@ class MDPGraph(object):
     def get_inverse_neighbors(self, state: Hashable) -> set[Hashable]:
         return self.state_neighbors_inverse[state]
 
+    def visualize(self, figsize=(10, 10), dpi=300, use_grid_layout=True):
+        # Create a directed graph
+        g = nx.DiGraph()
+
+        # Add edges for the transitions
+        for state, neighbors in self.state_neighbors.items():
+            for neighbor in neighbors:
+                if state != neighbor:
+                    g.add_edge(state, neighbor)
+
+        if use_grid_layout:
+            pos = grid_layout(g)
+        else:
+            # Use kamada_kawai_layout for better spacing
+            pos = nx.kamada_kawai_layout(g)
+
+            # Adjusting the position for more spacing
+            for key in pos:
+                pos[key] *= 3.5  # Increase spacing by multiplying the positions
+
+        plt.figure(figsize=figsize, dpi=dpi)
+        nx.draw_networkx_nodes(g, pos, node_size=400, node_color="skyblue")
+        nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=10, connectionstyle='arc3,rad=0.1')
+        nx.draw_networkx_labels(g, pos, font_size=8, font_weight="bold")
+
+        plt.title("MDP State Transition Graph")
+        plt.show()
+
 
 class PolicyGraph(MDPGraph):
     def __init__(self,):
@@ -82,8 +126,9 @@ class PolicyGraph(MDPGraph):
                 delta = max(delta, abs(new_probs[state] - self.state_probabilities[state]))
 
             total_prob = sum(new_probs.values())
-            for state in new_probs:
-                new_probs[state] /= total_prob
+            if total_prob > 0.0:
+                for state in new_probs:
+                    new_probs[state] /= total_prob
 
             self.state_probabilities = new_probs
             if delta < threshold:
@@ -118,6 +163,44 @@ class PolicyGraph(MDPGraph):
 
     def get_control_info(self):
         return self.control_info
+
+    def visualize_policy_and_control_info(self, figsize=(10, 10), dpi=300, use_grid_layout=True):
+        # Create a directed graph
+        g = nx.DiGraph()
+
+        # Add edges based on policy distributions
+        for state in self.policy_distributions:
+            for action, prob in self.policy_distributions[state].items():
+                if prob > 0:
+                    # Find the next state with the highest transition probability
+                    next_state = max(self.s_a_ns_transition_probs[state][action],
+                                     key=self.s_a_ns_transition_probs[state][action].get)
+                    g.add_edge(state, next_state, action=action, prob=prob)
+
+        if use_grid_layout:
+            pos = grid_layout(g)
+        else:
+            # Use kamada_kawai_layout for better spacing
+            pos = nx.kamada_kawai_layout(g)
+
+            # Adjusting the position for more spacing
+            for key in pos:
+                pos[key] *= 3.5  # Increase spacing by multiplying the positions
+
+        plt.figure(figsize=figsize, dpi=dpi)
+        nx.draw_networkx_nodes(g, pos, node_size=400, node_color="skyblue")
+        nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=10, connectionstyle='arc3,rad=0.1')
+
+        # Draw node labels (control information)
+        node_labels = {state: f'{state}\n{self.control_info[state]:.1f}' for state in g.nodes()}
+        nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=10, font_weight="bold")
+
+        # Draw edge labels (action and probability)
+        edge_labels = {(u, v): f'{g[u][v]["prob"]:.1f}' for u, v in g.edges()}
+        nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels, font_size=4)
+
+        plt.title("Policy Graph")
+        plt.show()
 
 
 class OptimalPolicyGraph(PolicyGraph):
