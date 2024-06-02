@@ -11,7 +11,7 @@ import torch
 from gymnasium import spaces
 from torchvision.transforms import transforms
 
-from mdp_graph import MDPGraph
+from mdp_graph import MDPGraph, OptimalPolicyGraph
 
 ACTIONS = {
     0: 'UP',
@@ -20,6 +20,13 @@ ACTIONS = {
     3: 'RIGHT',
 }
 
+deltas = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}
+perpendicular_moves = {
+    0: [(0, -1), (0, 1)],  # Action 0 (up) -> left or right
+    1: [(0, -1), (0, 1)],  # Action 1 (down) -> left or right
+    2: [(-1, 0), (1, 0)],  # Action 2 (left) -> up or down
+    3: [(-1, 0), (1, 0)],  # Action 3 (right) -> up or down
+}
 
 def rotate_grid(grid, coords):
     """Rotate the grid randomly by 0, 90, 180, or 270 degrees. Update non-None coords accordingly, leaving None values in place.
@@ -313,7 +320,31 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
         mdp_graph = MDPGraph()
         for row in range(self.grid.shape[0]):
             for col in range(self.grid.shape[1]):
-                pass
+                state = (row, col)
+                if self.grid[state] in ['W'] or state == self.goal_position:
+                    continue
+                for action in range(len(ACTIONS)):
+                    forward_delta = deltas[action]
+                    perpendicular_deltas = perpendicular_moves[action]
+                    forward_prob = self.trans_prob
+                    perpendicular_prob = 0.5 * (1.0 - self.trans_prob)
+                    _deltas = [forward_delta, *perpendicular_deltas,]
+                    _probs = [forward_prob, perpendicular_prob, perpendicular_prob]
+
+                    for delta, prob in zip(_deltas, _probs):
+                        next_state = (state[0] + delta[0], state[1] + delta[1])
+                        rwd = -0.01
+                        if self.grid[next_state] == 'W':
+                            next_state = state
+                            rwd -= 0.1
+                        elif self.grid[next_state] == 'X' or next_state in self.pos_random_traps:
+                            rwd -= 1.0
+                        elif next_state == self.goal_position:
+                            rwd = 5.0
+                        if prob > 0.0:
+                            mdp_graph.add_transition(state, action, next_state, prob)
+                            mdp_graph.add_reward(state, action, next_state, rwd)
+        return mdp_graph
 
     def load_grid(self, text_file):
         with open(text_file, 'r') as file:
@@ -354,13 +385,6 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
 
     def step(self, action):
         self.step_count += 1
-        deltas = {0: (-1, 0), 1: (1, 0), 2: (0, -1), 3: (0, 1)}
-        perpendicular_moves = {
-            0: [(0, -1), (0, 1)],  # Action 0 (up) -> left or right
-            1: [(0, -1), (0, 1)],  # Action 1 (down) -> left or right
-            2: [(-1, 0), (1, 0)],  # Action 2 (left) -> up or down
-            3: [(-1, 0), (1, 0)],  # Action 3 (right) -> up or down
-        }
 
         if random.random() < self.trans_prob:
             delta = deltas[action]
@@ -552,3 +576,18 @@ def preprocess_image(img: np.ndarray, rotate=False, size=None) -> torch.Tensor:
     # Add a batch dimensionget_optimal_policy_str
     processed_tensor = processed_tensor.unsqueeze(0)
     return processed_tensor
+
+
+if __name__ == "__main__":
+    env = SimpleGridWorld('maps/simple_grid/gridworld-maze-13.txt', make_random=True, random_traps=0,
+                          agent_position=None, goal_position=(1, 8), max_steps=1024, trans_prob=0.8)
+    obs, info = env.reset()
+    mdp_graph = env.make_mdp_graph()
+    optimal_policy_graph = OptimalPolicyGraph()
+    optimal_policy_graph.load_graph(mdp_graph)
+    optimal_policy_graph.value_iteration(0.99)
+    optimal_policy_graph.compute_optimal_policy(0.99)
+    optimal_policy = optimal_policy_graph.get_optimal_policy()
+    optimal_policy_graph.probability_iteration()
+    probability_distribution = optimal_policy_graph.get_probability_distribution()
+    pass

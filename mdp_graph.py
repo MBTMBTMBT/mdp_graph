@@ -65,7 +65,7 @@ class PolicyGraph(MDPGraph):
             for action in self.state_actions[state]:
                 self.policy_distributions[state][action] = prob
 
-    def probability_iteration(self, threshold: float = 1e-4, max_iterations: int = 1e5):
+    def probability_iteration(self, threshold: float = 1e-5, max_iterations: int = int(5e5)):
         for state in self.s_a_ns_transition_probs:
             self.state_probabilities[state] = 1.0 / len(self.s_a_ns_transition_probs)
         for _ in range(max_iterations):
@@ -78,9 +78,17 @@ class PolicyGraph(MDPGraph):
                         state_prob += self.state_probabilities[inverse_neighbour] * self.policy_distributions[inverse_neighbour][action] * self.s_a_ns_transition_probs[inverse_neighbour][action][state]
                 new_probs[state] = state_prob
                 delta = max(delta, abs(new_probs[state] - self.state_probabilities[state]))
+
+            total_prob = sum(new_probs.values())
+            for state in new_probs:
+                new_probs[state] /= total_prob
+
             self.state_probabilities = new_probs
             if delta < threshold:
                 break
+
+    def get_probability_distribution(self):
+        return self.state_probabilities
 
 
 class OptimalPolicyGraph(PolicyGraph):
@@ -88,7 +96,7 @@ class OptimalPolicyGraph(PolicyGraph):
         super().__init__()
         self.values = defaultdict(float)
 
-    def value_iteration(self, gamma: float, threshold: float = 1e-4, max_iterations: int = 1e5):
+    def value_iteration(self, gamma: float, threshold: float = 1e-5, max_iterations: int = int(5e5)):
         for _ in range(max_iterations):
             delta = 0
             new_values = defaultdict(float)
@@ -106,7 +114,7 @@ class OptimalPolicyGraph(PolicyGraph):
             if delta < threshold:
                 break
 
-    def compute_optimal_policy(self, gamma: float, threshold: float = 1e-4,):
+    def compute_optimal_policy(self, gamma: float, threshold: float = 1e-2,):
         for state in self.s_a_ns_transition_probs:
             action_values = []
             for action, next_states in self.s_a_ns_transition_probs[state].items():
