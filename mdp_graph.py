@@ -1,8 +1,9 @@
 import math
-from collections.abc import Hashable
 from collections import defaultdict
-import networkx as nx
+from collections.abc import Hashable
+
 import matplotlib.pyplot as plt
+import networkx as nx
 
 
 def grid_layout(g: nx.Graph) -> dict[Hashable, tuple[float, float]]:
@@ -45,12 +46,14 @@ class MDPGraph(object):
             self.state_actions[state].add(action)
         elif current_prob > 0.0 and probability == 0.0:
             # Remove the next_state from neighbors if its probability is 0
-            if all(self.s_a_ns_transition_probs[state][action][ns] == 0.0 for ns in self.s_a_ns_transition_probs[state][action]):
+            if all(self.s_a_ns_transition_probs[state][action][ns] == 0.0 for ns in
+                   self.s_a_ns_transition_probs[state][action]):
                 self.state_neighbors[state].discard(next_state)
                 self.state_actions[state].discard(action)
 
             # Clean up empty actions
-            if not any(self.s_a_ns_transition_probs[state][action][ns] > 0.0 for ns in self.s_a_ns_transition_probs[state][action]):
+            if not any(self.s_a_ns_transition_probs[state][action][ns] > 0.0 for ns in
+                       self.s_a_ns_transition_probs[state][action]):
                 del self.s_a_ns_transition_probs[state][action]
 
             # Remove state from inverse neighbors if no transitions to next_state exist
@@ -69,7 +72,8 @@ class MDPGraph(object):
     def get_inverse_neighbors(self, state: Hashable) -> set[Hashable]:
         return self.state_neighbors_inverse[state]
 
-    def visualize(self, figsize=(10, 10), dpi=300, use_grid_layout=True):
+    def visualize(self, title="MDP State Transition Graph", figsize=(10, 10), dpi=300, node_size=400, node_font_size=8,
+                  arrowsize=10, use_grid_layout=True):
         # Create a directed graph
         g = nx.DiGraph()
 
@@ -90,16 +94,16 @@ class MDPGraph(object):
                 pos[key] *= 3.5  # Increase spacing by multiplying the positions
 
         plt.figure(figsize=figsize, dpi=dpi)
-        nx.draw_networkx_nodes(g, pos, node_size=400, node_color="skyblue")
-        nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=10, connectionstyle='arc3,rad=0.1')
-        nx.draw_networkx_labels(g, pos, font_size=8, font_weight="bold")
+        nx.draw_networkx_nodes(g, pos, node_size=node_size, node_color="skyblue")
+        nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=arrowsize, connectionstyle='arc3,rad=0.1')
+        nx.draw_networkx_labels(g, pos, font_size=node_font_size, font_weight="bold")
 
-        plt.title("MDP State Transition Graph")
+        plt.title(title)
         plt.show()
 
 
 class PolicyGraph(MDPGraph):
-    def __init__(self,):
+    def __init__(self, ):
         super().__init__()
         self.policy_distributions = defaultdict(lambda: defaultdict(float))
         self.state_probabilities = defaultdict(float)
@@ -121,7 +125,9 @@ class PolicyGraph(MDPGraph):
                 state_prob = 0.0
                 for inverse_neighbour in self.get_inverse_neighbors(state):
                     for action in self.state_actions[inverse_neighbour]:
-                        state_prob += self.state_probabilities[inverse_neighbour] * self.policy_distributions[inverse_neighbour][action] * self.s_a_ns_transition_probs[inverse_neighbour][action][state]
+                        state_prob += self.state_probabilities[inverse_neighbour] * \
+                                      self.policy_distributions[inverse_neighbour][action] * \
+                                      self.s_a_ns_transition_probs[inverse_neighbour][action][state]
                 new_probs[state] = state_prob
                 delta = max(delta, abs(new_probs[state] - self.state_probabilities[state]))
 
@@ -148,7 +154,7 @@ class PolicyGraph(MDPGraph):
                     action_prob = self.policy_distributions[state][action]
                     if action_prob <= 0.0:
                         continue
-                    delta_control_info += action_prob * math.log2(action_prob/(1.0/len(self.state_actions[state])))
+                    delta_control_info += action_prob * math.log2(action_prob / (1.0 / len(self.state_actions[state])))
                 for action, next_states in self.s_a_ns_transition_probs[state].items():
                     for next_state, trans_prob in next_states.items():
                         neighbour_info = self.control_info[next_state]
@@ -164,7 +170,9 @@ class PolicyGraph(MDPGraph):
     def get_control_info(self):
         return self.control_info
 
-    def visualize_policy_and_control_info(self, figsize=(10, 10), dpi=300, use_grid_layout=True):
+    def visualize_policy_and_control_info(self, title="Policy and Control Info", figsize=(10, 10), dpi=300,
+                                          node_size=400, node_font_size=8, arrow_size=10, arrow_font_size=4,
+                                          use_grid_layout=True):
         # Create a directed graph
         g = nx.DiGraph()
 
@@ -188,23 +196,23 @@ class PolicyGraph(MDPGraph):
                 pos[key] *= 3.5  # Increase spacing by multiplying the positions
 
         plt.figure(figsize=figsize, dpi=dpi)
-        nx.draw_networkx_nodes(g, pos, node_size=400, node_color="skyblue")
-        nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=10, connectionstyle='arc3,rad=0.1')
+        nx.draw_networkx_nodes(g, pos, node_size=node_size, node_color="skyblue")
+        nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=arrow_size, connectionstyle='arc3,rad=0.1')
 
         # Draw node labels (control information)
         node_labels = {state: f'{state}\n{self.control_info[state]:.1f}' for state in g.nodes()}
-        nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=10, font_weight="bold")
+        nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=node_font_size, font_weight="bold")
 
         # Draw edge labels (action and probability)
         edge_labels = {(u, v): f'{g[u][v]["prob"]:.1f}' for u, v in g.edges()}
-        nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels, font_size=4)
+        nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels, font_size=arrow_font_size)
 
-        plt.title("Policy Graph")
+        plt.title(title)
         plt.show()
 
 
 class OptimalPolicyGraph(PolicyGraph):
-    def __init__(self,):
+    def __init__(self, ):
         super().__init__()
         self.values = defaultdict(float)
 
@@ -226,7 +234,7 @@ class OptimalPolicyGraph(PolicyGraph):
             if delta < threshold:
                 break
 
-    def compute_optimal_policy(self, gamma: float, threshold: float = 1e-2,):
+    def compute_optimal_policy(self, gamma: float, threshold: float = 1e-2, ):
         for state in self.s_a_ns_transition_probs:
             action_values = []
             for action, next_states in self.s_a_ns_transition_probs[state].items():
