@@ -579,11 +579,11 @@ def preprocess_image(img: np.ndarray, rotate=False, size=None) -> torch.Tensor:
 
 
 if __name__ == "__main__":
-    env = SimpleGridWorld('maps/test.txt', make_random=False, random_traps=0,
-                          agent_position=None, goal_position=(1, 5), max_steps=1024, trans_prob=0.8)
+    env = SimpleGridWorld('maps/H.txt', make_random=False, random_traps=0,
+                          agent_position=None, goal_position=(1, 8), max_steps=1024, trans_prob=1.0)
     obs, info = env.reset()
     mdp_graph = env.make_mdp_graph()
-    mdp_graph.visualize()
+    mdp_graph.visualize(figsize=(8, 5))
     optimal_policy_graph = OptimalPolicyGraph()
     optimal_policy_graph.load_graph(mdp_graph)
     optimal_policy_graph.value_iteration(0.999)
@@ -593,6 +593,23 @@ if __name__ == "__main__":
     probability_distribution = optimal_policy_graph.get_probability_distribution()
     optimal_policy_graph.control_info_iteration(0.999)
     control_info = optimal_policy_graph.get_control_info()
-    optimal_policy_graph.visualize_policy_and_control_info()
+    optimal_policy_graph.visualize_policy_and_control_info(figsize=(8, 5))
+    optimal_policy_graph.draw_action_distribution()
+
+    env = SimpleGridWorld('maps/S.txt', make_random=False, random_traps=0,
+                          agent_position=None, goal_position=(1, 8), max_steps=1024, trans_prob=1.0)
+    obs, info = env.reset()
+    mdp_graph = env.make_mdp_graph()
+    mdp_graph.visualize(figsize=(8, 5))
+    optimal_policy_graph = OptimalPolicyGraph()
+    optimal_policy_graph.load_graph(mdp_graph)
+    optimal_policy_graph.value_iteration(0.999)
+    optimal_policy_graph.compute_optimal_policy(0.999)
+    optimal_policy = optimal_policy_graph.get_optimal_policy()
+    optimal_policy_graph.probability_iteration()
+    probability_distribution = optimal_policy_graph.get_probability_distribution()
+    optimal_policy_graph.control_info_iteration(0.999)
+    control_info = optimal_policy_graph.get_control_info()
+    optimal_policy_graph.visualize_policy_and_control_info(figsize=(8, 5))
     optimal_policy_graph.draw_action_distribution()
     pass
