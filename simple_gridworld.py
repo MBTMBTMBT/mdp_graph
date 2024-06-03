@@ -28,6 +28,7 @@ perpendicular_moves = {
     3: [(-1, 0), (1, 0)],  # Action 3 (right) -> up or down
 }
 
+
 def rotate_grid(grid, coords):
     """Rotate the grid randomly by 0, 90, 180, or 270 degrees. Update non-None coords accordingly, leaving None values in place.
 
@@ -328,7 +329,7 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
                     perpendicular_deltas = perpendicular_moves[action]
                     forward_prob = self.trans_prob
                     perpendicular_prob = 0.5 * (1.0 - self.trans_prob)
-                    _deltas = [forward_delta, *perpendicular_deltas,]
+                    _deltas = [forward_delta, *perpendicular_deltas, ]
                     _probs = [forward_prob, perpendicular_prob, perpendicular_prob]
 
                     for delta, prob in zip(_deltas, _probs):
@@ -612,4 +613,5 @@ if __name__ == "__main__":
     control_info = optimal_policy_graph.get_control_info()
     optimal_policy_graph.visualize_policy_and_control_info(figsize=(8, 5))
     optimal_policy_graph.draw_action_distribution()
+    print(optimal_policy_graph.compute_policy_relevant_info({(3, 6), (3, 2)}))
     pass

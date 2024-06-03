@@ -247,6 +247,24 @@ class PolicyGraph(MDPGraph):
         plt.suptitle('Action Distribution for States')
         plt.show()
 
+    def compute_policy_relevant_info(self, state_set: set or None = None):
+        if state_set is None:
+            state_set = set(self.state_actions.keys())
+
+        policy_relevant_info = 0.0
+        state_prob_prior = 1.0 / len(state_set)
+
+        for state in state_set:
+            for action in self.state_actions[state]:
+                if self.policy_distributions[state][action] <= 0.0:
+                    continue
+                policy_relevant_info -= self.policy_distributions[state][action] * state_prob_prior * math.log2(self.policy_distributions[state][action] * state_prob_prior)
+                policy_relevant_info += self.policy_distributions[state][action] * state_prob_prior * math.log2(self.policy_distributions[state][action])
+                pass
+        policy_relevant_info *= state_prob_prior
+
+        return policy_relevant_info
+
 
 class OptimalPolicyGraph(PolicyGraph):
     def __init__(self, ):
