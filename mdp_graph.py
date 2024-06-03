@@ -264,17 +264,28 @@ class PolicyGraph(MDPGraph):
         if state_set is None:
             state_set = set(self.state_actions.keys())
 
-        policy_relevant_info = 0.0
         state_prob_prior = 1.0 / len(state_set)
 
+        policy_entropy = 0.0
+        actions_set = {action for actions in self.state_actions.values() for action in actions}
+        action_probs = {action: 0.0 for action in actions_set}
+        for action in actions_set:
+            for state in state_set:
+                action_probs[action] += self.policy_distributions[state][action] * state_prob_prior
+            if action_probs[action] <= 0.0:
+                continue
+            policy_entropy -= action_probs[action] * math.log2(action_probs[action])
+
+        dependent_policy_entropy = 0.0
         for state in state_set:
             for action in self.state_actions[state]:
                 if self.policy_distributions[state][action] <= 0.0:
                     continue
-                policy_relevant_info -= self.policy_distributions[state][action] * state_prob_prior * math.log2(self.policy_distributions[state][action] * state_prob_prior)
-                policy_relevant_info += self.policy_distributions[state][action] * state_prob_prior * math.log2(self.policy_distributions[state][action])
+                dependent_policy_entropy -= self.policy_distributions[state][action] * math.log2(self.policy_distributions[state][action])
                 pass
-        policy_relevant_info *= state_prob_prior
+        dependent_policy_entropy *= state_prob_prior
+
+        policy_relevant_info = policy_entropy - dependent_policy_entropy
 
         return policy_relevant_info
 
