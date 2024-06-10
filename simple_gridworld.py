@@ -468,7 +468,7 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
     def _render_to_surface(self):
         if self.viewer is None:
             self.viewer = pygame.Surface(self.screen_size)
-            self.cached_surface = pygame.Surface(self.obs_size)  # 使用obs_size代替screen_size
+            self.cached_surface = pygame.Surface(self.obs_size)
 
         self.viewer.fill((255, 255, 255))
 
@@ -551,6 +551,48 @@ class SimpleGridWorld(gymnasium.Env, collections.abc.Iterator):
                 transitions.append((coord, -0.01))
 
         return tuple(transitions)
+
+    def plot_grid(self, agent_position=None, goal_position=None, cell_size=(20, 20), dpi=50):
+        if agent_position is None:
+            agent_position = self.agent_position
+
+        if goal_position is None:
+            goal_position = self.goal_position
+
+        # Set up the figure and axis
+        fig, ax = plt.subplots(figsize=(self.grid.shape[1] * cell_size[0], self.grid.shape[0] * cell_size[1]), dpi=dpi)
+
+        # Draw the grid
+        for y in range(self.grid.shape[0]):
+            for x in range(self.grid.shape[1]):
+                cell_content = self.grid[y, x]
+                rect = plt.Rectangle((x, y), 1, 1, edgecolor='black', facecolor='white')
+                ax.add_patch(rect)
+                if cell_content == 'W':
+                    rect.set_facecolor('black')
+                elif cell_content == 'X' or (self.pos_random_traps is not None and (y, x) in self.pos_random_traps):
+                    rect.set_facecolor('red')
+
+        # Draw the goal
+        if goal_position is not None:
+            goal_rect = plt.Rectangle((goal_position[1], goal_position[0]), 1, 1, edgecolor='black', facecolor='green')
+            ax.add_patch(goal_rect)
+
+        # Draw the agent
+        if agent_position is not None:
+            agent_circle = plt.Circle((agent_position[1] + 0.5, agent_position[0] + 0.5), 0.5, color='blue')
+            ax.add_patch(agent_circle)
+
+        # Set the limits and aspect ratio
+        ax.set_xlim(0, self.grid.shape[1])
+        ax.set_ylim(0, self.grid.shape[0])
+        ax.set_aspect('equal')
+        ax.invert_yaxis()  # Match the coordinate system used in the given code
+
+        # Remove the axes for better visualization
+        ax.axis('off')
+
+        plt.show()
 
 
 def preprocess_image(img: np.ndarray, rotate=False, size=None) -> torch.Tensor:
