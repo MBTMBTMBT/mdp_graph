@@ -1,13 +1,13 @@
 WWWWWWWWWWWWW
-W   W       W
-W   W   X   W
-W   W       W
-W   W   W   W
-W   W   W   W
-W   W   W   W
-W   W   W   W
-W   W  XW   W
-W       W   W
-W  X    W X W
-WX      W   W
+W           W
+W   X       W
+W   X       W
+W  XWWWWWWWWW
+W  X        W
+W     X     W
+W           W
+WWWWWWWWWX  W
+W     X     W
+W        X  W
+W           W
 WWWWWWWWWWWWW
