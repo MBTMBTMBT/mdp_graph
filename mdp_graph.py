@@ -73,7 +73,7 @@ class MDPGraph(object):
     def get_inverse_neighbors(self, state: Hashable) -> set[Hashable]:
         return self.state_neighbors_inverse[state]
 
-    def visualize(self, title="MDP State Transition Graph", highlight_states: set or None = None, figsize=(5, 5), dpi=300, node_size=400, node_font_size=8,
+    def visualize(self, title="MDP State Transition Graph", highlight_states: set or None = None, figsize=(5, 5), dpi=90, node_size=400, node_font_size=8,
                   arrowsize=10, use_grid_layout=True):
         # Create a directed graph
         g = nx.DiGraph()
@@ -178,7 +178,7 @@ class PolicyGraph(MDPGraph):
         return self.control_info
 
     def visualize_policy_and_control_info(self, title="Policy and Control Info", highlight_states: set or None = None,
-                                          figsize=(5, 5), dpi=300,
+                                          figsize=(5, 5), dpi=90,
                                           node_size=400, node_font_size=8, arrow_size=10, arrow_font_size=4,
                                           use_grid_layout=True):
         # Create a directed graph
@@ -224,7 +224,7 @@ class PolicyGraph(MDPGraph):
         plt.title(title)
         plt.show()
 
-    def draw_action_distribution(self, num_cols: int = 5, figsize=(20, 4), dpi=300):
+    def draw_action_distribution(self, num_cols: int = 5, figsize=(20, 4), dpi=90):
         states = sorted(list(self.state_actions.keys()))
         actions_set = {action for actions in self.state_actions.values() for action in actions}
         actions = sorted(actions_set)
