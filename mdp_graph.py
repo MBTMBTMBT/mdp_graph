@@ -5,9 +5,10 @@ from collections.abc import Hashable
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from typing import Dict, Tuple
 
 
-def grid_layout(g: nx.Graph) -> dict[Hashable, tuple[float, float]]:
+def grid_layout(g: nx.Graph) -> Dict[Hashable, Tuple[float, float]]:
     '''
     Can only be used for gridworlds.
     :param g: graph to visualize.
@@ -30,6 +31,9 @@ class MDPGraph(object):
         self.s_a_ns_rewards = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
 
     def load_graph(self, graph: 'MDPGraph'):
+        """
+        For child class to load from parent instance.
+        """
         self.state_neighbors = graph.state_neighbors
         self.state_neighbors_inverse = graph.state_neighbors_inverse
         self.state_actions = graph.state_actions
