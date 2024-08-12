@@ -184,7 +184,7 @@ class PolicyGraph(MDPGraph):
 
     def visualize_policy_and_control_info(self, title="Policy and Control Info", highlight_states: set or None = None,
                                           figsize=(5, 5), dpi=90,
-                                          node_size=400, node_font_size=8, arrow_size=10, arrow_font_size=4,
+                                          node_size=400, node_font_size=8, arrow_size=10, arrow_font_size=8,
                                           use_grid_layout=True, display_state_name=True):
         # Create a directed graph
         g = nx.DiGraph()
@@ -221,7 +221,9 @@ class PolicyGraph(MDPGraph):
         # Draw node labels (control information)
         if display_state_name:
             node_labels = {state: f'{state}\n{self.control_info[state]:.1f}' for state in g.nodes()}
-            nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=node_font_size, font_weight="bold")
+        else:
+            node_labels = {state: f'{self.control_info[state]:.1f}' for state in g.nodes()}
+        nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=node_font_size, font_weight="bold")
 
         # Draw edge labels (action and probability)
         edge_labels = {(u, v): f'{g[u][v]["prob"]:.1f}' for u, v in g.edges()}
