@@ -118,16 +118,28 @@ class PolicyGraph(MDPGraph):
     def __init__(self, ):
         super().__init__()
         self.policy_distributions = defaultdict(lambda: defaultdict(float))
+        self.prior_policy_distributions = defaultdict(lambda: defaultdict(float))
         self.state_probabilities = defaultdict(float)
         self.control_info = defaultdict(float)
         self.policy_value = defaultdict(float)
         self.free_energy = defaultdict(float)
+
+        self.uniform_prior_policy()
+
+    def set_state_prob(self, state: Hashable, action: Hashable, probability: float):
+        self.policy_distributions[state][action] = probability
 
     def uniform_policy(self):
         for state in self.state_actions.keys():
             prob = 1.0 / len(self.state_actions[state])
             for action in self.state_actions[state]:
                 self.policy_distributions[state][action] = prob
+
+    def uniform_prior_policy(self):
+        for state in self.state_actions.keys():
+            prob = 1.0 / len(self.state_actions[state])
+            for action in self.state_actions[state]:
+                self.prior_policy_distributions[state][action] = prob
 
     def probability_iteration(self, threshold: float = 1e-5, max_iterations: int = int(1e5)):
         for state in self.s_a_ns_transition_probs:
@@ -191,9 +203,10 @@ class PolicyGraph(MDPGraph):
                 delta_control_info = 0.0
                 for action in self.state_actions[state]:
                     action_prob = self.policy_distributions[state][action]
+                    prior = self.prior_policy_distributions[state][action]
                     if action_prob <= 0.0:
                         continue
-                    delta_control_info += action_prob * math.log2(action_prob / (1.0 / len(self.state_actions[state])))
+                    delta_control_info += action_prob * math.log2(action_prob / prior)
                 for action, next_states in self.s_a_ns_transition_probs[state].items():
                     for next_state, trans_prob in next_states.items():
                         neighbour_info = self.control_info[next_state]
@@ -330,106 +343,6 @@ class PolicyGraph(MDPGraph):
 
         plt.title(title)
         plt.show()
-    #
-    # def visualize_policy_and_control_info(self, title="Policy and Control Info", highlight_states: set or None = None,
-    #                                       figsize=(5, 5), dpi=90,
-    #                                       node_size=400, node_font_size=8, arrow_size=10, arrow_font_size=8,
-    #                                       use_grid_layout=True, display_state_name=True):
-    #     # Create a directed graph
-    #     g = nx.DiGraph()
-    #
-    #     # Add edges based on policy distributions
-    #     for state in self.policy_distributions:
-    #         for action, prob in self.policy_distributions[state].items():
-    #             if prob > 0:
-    #                 # Find the next state with the highest transition probability
-    #                 next_state = max(self.s_a_ns_transition_probs[state][action],
-    #                                  key=self.s_a_ns_transition_probs[state][action].get)
-    #                 g.add_edge(state, next_state, action=action, prob=prob)
-    #
-    #     if use_grid_layout:
-    #         pos = grid_layout(g)
-    #     else:
-    #         # Use kamada_kawai_layout for better spacing
-    #         pos = nx.kamada_kawai_layout(g)
-    #
-    #         # Adjusting the position for more spacing
-    #         for key in pos:
-    #             pos[key] *= 3.5  # Increase spacing by multiplying the positions
-    #
-    #     # Determine node colors
-    #     if highlight_states:
-    #         node_colors = ['red' if node in highlight_states else 'skyblue' for node in g.nodes()]
-    #     else:
-    #         node_colors = ['skyblue' for node in g.nodes()]
-    #
-    #     plt.figure(figsize=figsize, dpi=dpi)
-    #     nx.draw_networkx_nodes(g, pos, node_size=node_size, node_color=node_colors)
-    #     nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=arrow_size, connectionstyle='arc3,rad=0.1')
-    #
-    #     # Draw node labels (control information)
-    #     if display_state_name:
-    #         node_labels = {state: f'{state}\n{self.control_info[state]:.1f}' for state in g.nodes()}
-    #     else:
-    #         node_labels = {state: f'{self.control_info[state]:.1f}' for state in g.nodes()}
-    #     nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=node_font_size, font_weight="bold")
-    #
-    #     # Draw edge labels (action and probability)
-    #     edge_labels = {(u, v): f'{g[u][v]["prob"]:.1f}' for u, v in g.edges()}
-    #     nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels, font_size=arrow_font_size)
-    #
-    #     plt.title(title)
-    #     plt.show()
-    #
-    # def visualize_policy_and_free_energy(self, title="Policy and Free Energy", highlight_states: set or None = None,
-    #                                       figsize=(5, 5), dpi=90,
-    #                                       node_size=400, node_font_size=8, arrow_size=10, arrow_font_size=8,
-    #                                       use_grid_layout=True, display_state_name=True):
-    #     # Create a directed graph
-    #     g = nx.DiGraph()
-    #
-    #     # Add edges based on policy distributions
-    #     for state in self.policy_distributions:
-    #         for action, prob in self.policy_distributions[state].items():
-    #             if prob > 0:
-    #                 # Find the next state with the highest transition probability
-    #                 next_state = max(self.s_a_ns_transition_probs[state][action],
-    #                                  key=self.s_a_ns_transition_probs[state][action].get)
-    #                 g.add_edge(state, next_state, action=action, prob=prob)
-    #
-    #     if use_grid_layout:
-    #         pos = grid_layout(g)
-    #     else:
-    #         # Use kamada_kawai_layout for better spacing
-    #         pos = nx.kamada_kawai_layout(g)
-    #
-    #         # Adjusting the position for more spacing
-    #         for key in pos:
-    #             pos[key] *= 3.5  # Increase spacing by multiplying the positions
-    #
-    #     # Determine node colors
-    #     if highlight_states:
-    #         node_colors = ['red' if node in highlight_states else 'skyblue' for node in g.nodes()]
-    #     else:
-    #         node_colors = ['skyblue' for node in g.nodes()]
-    #
-    #     plt.figure(figsize=figsize, dpi=dpi)
-    #     nx.draw_networkx_nodes(g, pos, node_size=node_size, node_color=node_colors)
-    #     nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=arrow_size, connectionstyle='arc3,rad=0.1')
-    #
-    #     # Draw node labels (control information)
-    #     if display_state_name:
-    #         node_labels = {state: f'{state}\n{self.free_energy[state]:.1f}' for state in g.nodes()}
-    #     else:
-    #         node_labels = {state: f'{self.free_energy[state]:.1f}' for state in g.nodes()}
-    #     nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=node_font_size, font_weight="bold")
-    #
-    #     # Draw edge labels (action and probability)
-    #     edge_labels = {(u, v): f'{g[u][v]["prob"]:.1f}' for u, v in g.edges()}
-    #     nx.draw_networkx_edge_labels(g, pos, edge_labels=edge_labels, font_size=arrow_font_size)
-    #
-    #     plt.title(title)
-    #     plt.show()
 
     def draw_action_distribution(self, num_cols: int = 5, figsize=(20, 4), dpi=90):
         states = sorted(list(self.state_actions.keys()))
