@@ -141,6 +141,10 @@ class PolicyGraph(MDPGraph):
             for action in self.state_actions[state]:
                 self.prior_policy_distributions[state][action] = prob
 
+    def swap_policy_and_prior(self):
+        self.policy_distributions, self.prior_policy_distributions \
+            = self.prior_policy_distributions, self.policy_distributions
+
     def probability_iteration(self, threshold: float = 1e-5, max_iterations: int = int(1e5)):
         for state in self.s_a_ns_transition_probs:
             self.state_probabilities[state] = 1.0 / len(self.s_a_ns_transition_probs)
