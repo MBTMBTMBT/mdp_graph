@@ -5,7 +5,7 @@ from collections.abc import Hashable
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Set
 
 
 def grid_layout(g: nx.Graph) -> Dict[Hashable, Tuple[float, float]]:
@@ -71,10 +71,10 @@ class MDPGraph(object):
         if self.s_a_ns_transition_probs[state][action][next_state] > 0.0:
             self.s_a_ns_rewards[state][action][next_state] = reward
 
-    def get_neighbors(self, state: Hashable) -> set[Hashable]:
+    def get_neighbors(self, state: Hashable) -> Set[Hashable]:
         return self.state_neighbors[state]
 
-    def get_inverse_neighbors(self, state: Hashable) -> set[Hashable]:
+    def get_inverse_neighbors(self, state: Hashable) -> Set[Hashable]:
         return self.state_neighbors_inverse[state]
 
     def visualize(self, title="MDP State Transition Graph", highlight_states: set or None = None, figsize=(5, 5), dpi=90, node_size=400, node_font_size=8,
