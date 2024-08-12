@@ -78,7 +78,7 @@ class MDPGraph(object):
         return self.state_neighbors_inverse[state]
 
     def visualize(self, title="MDP State Transition Graph", highlight_states: set or None = None, figsize=(5, 5), dpi=90, node_size=400, node_font_size=8,
-                  arrowsize=10, use_grid_layout=True):
+                  arrowsize=10, arrow_font_size=4, use_grid_layout=True, display_state_name=True):
         # Create a directed graph
         g = nx.DiGraph()
 
@@ -107,7 +107,8 @@ class MDPGraph(object):
         plt.figure(figsize=figsize, dpi=dpi)
         nx.draw_networkx_nodes(g, pos, node_size=node_size, node_color=node_colors)
         nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=arrowsize, connectionstyle='arc3,rad=0.1')
-        nx.draw_networkx_labels(g, pos, font_size=node_font_size, font_weight="bold")
+        if display_state_name:
+            nx.draw_networkx_labels(g, pos, font_size=node_font_size, font_weight="bold")
 
         plt.title(title)
         plt.show()
@@ -184,7 +185,7 @@ class PolicyGraph(MDPGraph):
     def visualize_policy_and_control_info(self, title="Policy and Control Info", highlight_states: set or None = None,
                                           figsize=(5, 5), dpi=90,
                                           node_size=400, node_font_size=8, arrow_size=10, arrow_font_size=4,
-                                          use_grid_layout=True):
+                                          use_grid_layout=True, display_state_name=True):
         # Create a directed graph
         g = nx.DiGraph()
 
@@ -218,8 +219,9 @@ class PolicyGraph(MDPGraph):
         nx.draw_networkx_edges(g, pos, arrowstyle='-|>', arrowsize=arrow_size, connectionstyle='arc3,rad=0.1')
 
         # Draw node labels (control information)
-        node_labels = {state: f'{state}\n{self.control_info[state]:.1f}' for state in g.nodes()}
-        nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=node_font_size, font_weight="bold")
+        if display_state_name:
+            node_labels = {state: f'{state}\n{self.control_info[state]:.1f}' for state in g.nodes()}
+            nx.draw_networkx_labels(g, pos, labels=node_labels, font_size=node_font_size, font_weight="bold")
 
         # Draw edge labels (action and probability)
         edge_labels = {(u, v): f'{g[u][v]["prob"]:.1f}' for u, v in g.edges()}
