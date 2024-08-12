@@ -129,6 +129,9 @@ class PolicyGraph(MDPGraph):
     def set_state_prob(self, state: Hashable, action: Hashable, probability: float):
         self.policy_distributions[state][action] = probability
 
+    def set_prior_prob(self, state: Hashable, action: Hashable, probability: float):
+        self.prior_policy_distributions[state][action] = probability
+
     def uniform_policy(self):
         for state in self.state_actions.keys():
             prob = 1.0 / len(self.state_actions[state])
