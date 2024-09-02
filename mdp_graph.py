@@ -226,9 +226,34 @@ class PolicyGraph(MDPGraph):
             if delta < threshold:
                 break
 
-    def get_free_energy(self, beta: float):
-        for state in self.s_a_ns_transition_probs:
-            self.free_energy[state] = self.control_info[state] - beta * self.policy_value[state]
+    def free_energy_iteration(self, beta: float, gamma: float, threshold: float = 1e-3, max_iterations: int = int(1e5)):
+        for _ in range(max_iterations):
+            delta = 0
+            new_free_energy = defaultdict(float)
+            for state in self.s_a_ns_transition_probs:
+                delta_control_info = 0.0
+                state_free_energy = 0.0
+                delta_value = 0.0
+                for action in self.state_actions[state]:
+                    action_prob = self.policy_distributions[state][action]
+                    prior = self.prior_policy_distributions[state][action]
+                    if action_prob <= 0.0:
+                        continue
+                    delta_control_info += action_prob * math.log2(action_prob / prior)
+                    for next_state in self.get_neighbors(state):
+                        delta_value += action_prob * self.s_a_ns_transition_probs[state][action][next_state] * self.s_a_ns_rewards[state][action][next_state]
+                delta_free_energy = delta_control_info - beta * delta_value
+                for action, next_states in self.s_a_ns_transition_probs[state].items():
+                    for next_state, trans_prob in next_states.items():
+                        neighbour_energy = self.free_energy[next_state]
+                        action_prob = self.policy_distributions[state][action]
+                        state_free_energy += action_prob * trans_prob * neighbour_energy
+                state_free_energy *= gamma
+                new_free_energy[state] = delta_free_energy + state_free_energy
+                delta = max(delta, abs(new_free_energy[state] - self.free_energy[state]))
+            self.free_energy = new_free_energy
+            if delta < threshold:
+                break
 
     def get_control_info(self):
         return self.control_info
