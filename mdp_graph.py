@@ -210,7 +210,7 @@ class PolicyGraph(MDPGraph):
                 delta_control_info = 0.0
                 for action in self.state_actions[state]:
                     action_prob = self.policy_distributions[state][action]
-                    prior = self.prior_policy_distributions[state][action]
+                    prior = self.prior_policy_distributions[state][action] + 1e-10
                     if action_prob <= 0.0:
                         continue
                     delta_control_info += action_prob * math.log2(action_prob / prior)
